@@ -5,7 +5,6 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Layout } from "@/components/layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -71,7 +70,6 @@ export default function LeavesPage() {
   }
 
   return (
-    <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -366,6 +364,5 @@ export default function LeavesPage() {
           )}
         </Tabs>
       </div>
-    </Layout>
   )
 }

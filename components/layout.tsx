@@ -121,7 +121,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex h-screen bg-background">
       {/* Sidebar for desktop */}
       <div
-        className={`fixed inset-y-0 z-50 flex w-64 flex-col border-r bg-card transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+        className={` fixed inset-y-0 z-50 flex w-64 flex-col border-r bg-card transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -130,7 +130,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="rounded-md bg-primary p-1">
               <UserCircle className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">Avialdo HRMS</span>
+            <span className="text-xl font-bold">NEXTSOFT HRMS</span>
           </Link>
           <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden">
             <X className="h-5 w-5" />
@@ -199,7 +199,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="rounded-md bg-primary p-1">
               <UserCircle className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">Avialdo HRMS</span>
+            <span className="text-xl font-bold">NEXTSOFT HRMS</span>
           </Link>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
             <X className="h-5 w-5" />
@@ -254,15 +254,15 @@ export function Layout({ children }: LayoutProps) {
         <header className="flex h-16 items-center justify-between border-b px-4">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)} className="mr-2 md:hidden">
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 " />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="hidden md:inline-flex"
+              className="hidden md:inline-flex md:hidden"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 " />
             </Button>
           </div>
           <div className="flex items-center gap-4">

@@ -85,7 +85,7 @@ export default function ReportsPage() {
   const [dateRange, setDateRange] = useState({ from: "2023-01-01", to: "2023-06-30" })
 
   return (
-    <div className="container mx-auto py-6 space-y-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
@@ -752,11 +752,11 @@ export default function ReportsPage() {
                               </td>
                               <td className="py-3 px-4">
                                 {currentScore >= 90 ? (
-                                  <Badge variant="success">Excellent</Badge>
+                                  <Badge variant="outline">Excellent</Badge>
                                 ) : currentScore >= 80 ? (
-                                  <Badge variant="default">Good</Badge>
+                                  <Badge variant="outline">Good</Badge>
                                 ) : currentScore >= 70 ? (
-                                  <Badge variant="warning">Average</Badge>
+                                  <Badge variant="outline">Average</Badge>
                                 ) : (
                                   <Badge variant="destructive">Needs Improvement</Badge>
                                 )}

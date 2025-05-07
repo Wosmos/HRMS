@@ -89,7 +89,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create an account"
-      subtitle="Sign up to get started with Avialdo HRMS"
+      subtitle="Sign up to get started with NEXTSOFT HRMS"
       backLink={{ href: "/", label: "Back to home" }}
       alternativeAction={{
         text: "Already have an account?",

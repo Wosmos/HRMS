@@ -5,7 +5,6 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Layout } from "@/components/layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -63,7 +62,6 @@ export default function ShiftsPage() {
   const userShift = userShiftAssignment ? shifts.find((shift) => shift.id === userShiftAssignment.shiftId) : null
 
   return (
-    <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -338,6 +336,5 @@ export default function ShiftsPage() {
           )}
         </Tabs>
       </div>
-    </Layout>
   )
 }

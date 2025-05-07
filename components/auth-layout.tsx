@@ -69,7 +69,7 @@ export function AuthLayout({ children, title, subtitle, backLink, alternativeAct
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </div>
-          <span className="text-2xl font-bold">Avialdo HRMS</span>
+          <span className="text-2xl font-bold">NEXTSOFT HRMS</span>
         </div>
         <div className="max-w-md text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">Empowering Teams, Streamlining HR</h2>

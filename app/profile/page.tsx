@@ -5,7 +5,6 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Layout } from "@/components/layout"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,7 +49,6 @@ export default function ProfilePage() {
   }
 
   return (
-    <Layout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
@@ -338,6 +336,5 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
-    </Layout>
   )
 }

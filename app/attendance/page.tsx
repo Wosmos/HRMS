@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Layout } from "@/components/layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -94,7 +93,7 @@ export default function AttendancePage() {
   })
 
   return (
-    <Layout>
+ 
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attendance</h1>
@@ -279,6 +278,6 @@ export default function AttendancePage() {
           )}
         </Tabs>
       </div>
-    </Layout>
+
   )
 }

@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AuthLayout } from "@/components/auth-layout"
 import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import DemoCredentials from "@/components/demo-credentials" // Import the new component
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -66,6 +67,9 @@ export default function LoginPage() {
         href: "/register",
       }}
     >
+      {/* Replace the old demo credentials section with the new component */}
+      <DemoCredentials />
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -132,10 +136,6 @@ export default function LoginPage() {
             "Sign in"
           )}
         </Button>
-
-        
-
-     
 
         <div className="mt-6 text-center text-xs text-muted-foreground">
           By signing in, you agree to our{" "}
