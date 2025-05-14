@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Search, UserPlus, Download, Upload, MoreHorizontal, Check, ChevronsUpDown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { employees } from "@/lib/data"
 
 const departments = [
   { label: "All Departments", value: "all" },
@@ -32,24 +31,41 @@ const departments = [
   { label: "Operations", value: "operations" },
 ]
 
-const statuses = [
-  { label: "All Statuses", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "On Leave", value: "on-leave" },
-  { label: "Terminated", value: "terminated" },
-]
+// Add this type to match the CSV schema
+type Employee = {
+  id: string
+  name: string
+  email: string
+  password: string
+  role: string
+  department: string
+  position: string
+  avatar: string
+  phone: string
+  address: string
+  date_of_birth: string
+  cnic: string
+  gender: string
+  join_date: string
+  is_deleted: string
+  is_manager: string
+  leave_balance: string
+}
 
 export default function EmployeesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedDepartment, setSelectedDepartment] = useState(departments[0])
-  const [selectedStatus, setSelectedStatus] = useState(statuses[0])
   const [openDepartment, setOpenDepartment] = useState(false)
-  const [openStatus, setOpenStatus] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [importError, setImportError] = useState("")
+  const [employeeList, setEmployeeList] = useState<Employee[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Filter employees based on search, department, and status
-  const filteredEmployees = employees.filter((employee) => {
+  const filteredEmployees = employeeList.filter((employee: Employee) => {
     const matchesSearch =
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -57,10 +73,108 @@ export default function EmployeesPage() {
 
     const matchesDepartment = selectedDepartment.value === "all" || employee.department === selectedDepartment.value
 
-    const matchesStatus = selectedStatus.value === "all" || employee.status === selectedStatus.value
-
-    return matchesSearch && matchesDepartment && matchesStatus
+    return matchesSearch && matchesDepartment
   })
+
+  // Add Employee Handler
+  const handleAddEmployee = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.target as HTMLFormElement
+    const formData = new FormData(form)
+    const newEmployee: Employee = {
+      id: Date.now().toString(),
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+      role: formData.get("role") as string,
+      department: formData.get("department") as string,
+      position: formData.get("position") as string,
+      avatar: formData.get("avatar") as string || "",
+      phone: formData.get("phone") as string || "",
+      address: formData.get("address") as string || "",
+      date_of_birth: formData.get("date_of_birth") as string || "",
+      cnic: formData.get("cnic") as string || "",
+      gender: formData.get("gender") as string || "",
+      join_date: formData.get("join_date") as string,
+      is_deleted: formData.get("is_deleted") === "true" ? "true" : "false",
+      is_manager: formData.get("is_manager") === "true" ? "true" : "false",
+      leave_balance: formData.get("leave_balance") as string || "30",
+    }
+    setEmployeeList([newEmployee, ...employeeList])
+    setIsAddOpen(false)
+    form.reset()
+  }
+
+  // Export CSV Handler
+  const handleExportCSV = () => {
+    const headers = [
+      "id","name","email","password","role","department","position","avatar","phone","address","date_of_birth","cnic","gender","join_date","is_deleted","is_manager","leave_balance"
+    ]
+    const rows = employeeList.map(emp => [
+      emp.id, emp.name, emp.email, emp.password, emp.role, emp.department, emp.position, emp.avatar, emp.phone, emp.address, emp.date_of_birth, emp.cnic, emp.gender, emp.join_date, emp.is_deleted, emp.is_manager, emp.leave_balance
+    ])
+    const csvContent = [headers, ...rows].map(row => row.map(val => `"${val ?? ''}"`).join(",")).join("\n")
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'employees.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // Import CSV Handler
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError("")
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string
+        const lines = text.split(/\r?\n/).filter(Boolean)
+        const [header, ...rows] = lines
+        const headerFields = header.split(',').map(h => h.replace(/"/g, '').trim().toLowerCase())
+        const required = [
+          "id","name","email","password","role","department","position","avatar","phone","address","date_of_birth","cnic","gender","join_date","is_deleted","is_manager","leave_balance"
+        ]
+        if (!required.every(r => headerFields.includes(r))) {
+          setImportError("CSV must have columns: " + required.join(", "))
+          return
+        }
+        const newEmployees: Employee[] = rows.map(row => {
+          // Handle quoted CSV values and commas inside quotes
+          const values = row.match(/("[^"]*"|[^,]+)/g)?.map(v => v.replace(/"/g, '')) || []
+          return {
+            id: values[headerFields.indexOf("id")] || Date.now().toString() + Math.random(),
+            name: values[headerFields.indexOf("name")] || "",
+            email: values[headerFields.indexOf("email")] || "",
+            password: values[headerFields.indexOf("password")] || "",
+            role: values[headerFields.indexOf("role")] || "",
+            department: values[headerFields.indexOf("department")] || "",
+            position: values[headerFields.indexOf("position")] || "",
+            avatar: values[headerFields.indexOf("avatar")] || "",
+            phone: values[headerFields.indexOf("phone")] || "",
+            address: values[headerFields.indexOf("address")] || "",
+            date_of_birth: values[headerFields.indexOf("date_of_birth")] || "",
+            cnic: values[headerFields.indexOf("cnic")] || "",
+            gender: values[headerFields.indexOf("gender")] || "",
+            join_date: values[headerFields.indexOf("join_date")] || "",
+            is_deleted: values[headerFields.indexOf("is_deleted")] || "false",
+            is_manager: values[headerFields.indexOf("is_manager")] || "false",
+            leave_balance: values[headerFields.indexOf("leave_balance")] || "30",
+          }
+        })
+        setEmployeeList([...newEmployees, ...employeeList])
+        setIsImportOpen(false)
+      } catch (err) {
+        setImportError("Failed to import CSV. Please check the file format.")
+      }
+    }
+    reader.readAsText(file)
+  }
 
   return (
     <div className="w-full mx-auto py-6 space-y-6 animate-fade-in">
@@ -70,15 +184,15 @@ export default function EmployeesPage() {
           <p className="text-muted-foreground">Manage and view all employees in your organization</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setIsAddOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add Employee
           </Button>
@@ -143,47 +257,6 @@ export default function EmployeesPage() {
                   </Command>
                 </PopoverContent>
               </Popover>
-
-              <Popover open={openStatus} onOpenChange={setOpenStatus}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openStatus}
-                    className="justify-between min-w-[200px]"
-                  >
-                    {selectedStatus.label}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search status..." />
-                    <CommandList>
-                      <CommandEmpty>No status found.</CommandEmpty>
-                      <CommandGroup>
-                        {statuses.map((status) => (
-                          <CommandItem
-                            key={status.value}
-                            value={status.value}
-                            onSelect={() => {
-                              setSelectedStatus(status)
-                              setOpenStatus(false)
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                selectedStatus.value === status.value ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-                            {status.label}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
             </div>
           </div>
 
@@ -191,23 +264,26 @@ export default function EmployeesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Position</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Join Date</TableHead>
+                  <TableHead>Is Manager</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEmployees.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No employees found matching your criteria
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredEmployees.map((employee) => (
+                  filteredEmployees.map((employee: Employee) => (
                     <TableRow
                       key={employee.id}
                       className="cursor-pointer hover:bg-muted/50"
@@ -216,44 +292,14 @@ export default function EmployeesPage() {
                         setIsProfileOpen(true)
                       }}
                     >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={employee.avatar || "/placeholder.svg"} alt={employee.name} />
-                            <AvatarFallback>
-                              {employee.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{employee.name}</div>
-                            <div className="text-sm text-muted-foreground">{employee.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {employee.department}
-                        </Badge>
-                      </TableCell>
+                      <TableCell className="font-medium">{employee.name}</TableCell>
+                      <TableCell>{employee.email}</TableCell>
+                      <TableCell>{employee.department}</TableCell>
                       <TableCell>{employee.position}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            employee.status === "active"
-                              ? "success"
-                              : employee.status === "on-leave"
-                                ? "warning"
-                                : "destructive"
-                          }
-                          className="capitalize"
-                        >
-                          {employee.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{employee.joinDate}</TableCell>
+                      <TableCell>{employee.role}</TableCell>
+                      <TableCell>{employee.phone}</TableCell>
+                      <TableCell>{employee.join_date}</TableCell>
+                      <TableCell>{employee.is_manager}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -298,24 +344,12 @@ export default function EmployeesPage() {
                     <AvatarFallback className="text-2xl">
                       {selectedEmployee.name
                         .split(" ")
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <h3 className="mt-4 text-xl font-semibold">{selectedEmployee.name}</h3>
                   <p className="text-muted-foreground">{selectedEmployee.position}</p>
-                  <Badge
-                    variant={
-                      selectedEmployee.status === "active"
-                        ? "success"
-                        : selectedEmployee.status === "on-leave"
-                          ? "warning"
-                          : "destructive"
-                    }
-                    className="mt-2 capitalize"
-                  >
-                    {selectedEmployee.status}
-                  </Badge>
 
                   <div className="w-full mt-6 space-y-2">
                     <div className="flex justify-between text-sm">
@@ -324,7 +358,7 @@ export default function EmployeesPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Joined:</span>
-                      <span className="font-medium">{selectedEmployee.joinDate}</span>
+                      <span className="font-medium">{selectedEmployee.join_date}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Employee ID:</span>
@@ -374,7 +408,7 @@ export default function EmployeesPage() {
                             <CardContent className="p-4 space-y-2">
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Birthday:</span>
-                                <span>{selectedEmployee.birthday || "Jan 15, 1985"}</span>
+                                <span>{selectedEmployee.date_of_birth || "Jan 15, 1985"}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Gender:</span>
@@ -382,7 +416,7 @@ export default function EmployeesPage() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Nationality:</span>
-                                <span>{selectedEmployee.nationality || "United States"}</span>
+                                <span>{selectedEmployee.cnic || "United States"}</span>
                               </div>
                             </CardContent>
                           </Card>
@@ -402,7 +436,7 @@ export default function EmployeesPage() {
                                   "Team Management",
                                   "Strategic Planning",
                                 ]
-                              ).map((skill, i) => (
+                              ).map((skill: string, i: number) => (
                                 <Badge key={i} variant="secondary">
                                   {skill}
                                 </Badge>
@@ -652,6 +686,108 @@ export default function EmployeesPage() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Add Employee Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="max-w-2xl p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="text-2xl font-bold">Add New Employee</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Fill in the details to add a new employee.</DialogDescription>
+          </DialogHeader>
+          <form className="bg-muted/40 px-6 pb-6 pt-2 rounded-b-xl w-full" onSubmit={handleAddEmployee}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name</label>
+                <Input name="name" placeholder="Full Name" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input name="email" placeholder="Email" type="email" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <Input name="password" placeholder="Password" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Role (number)</label>
+                <Input name="role" placeholder="Role (number)" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Department</label>
+                <Input name="department" placeholder="Department" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Position</label>
+                <Input name="position" placeholder="Position" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Avatar URL</label>
+                <Input name="avatar" placeholder="Avatar URL (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <Input name="phone" placeholder="Phone (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Address</label>
+                <Input name="address" placeholder="Address (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Date of Birth</label>
+                <Input name="date_of_birth" placeholder="YYYY-MM-DD (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">CNIC</label>
+                <Input name="cnic" placeholder="CNIC (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Gender</label>
+                <Input name="gender" placeholder="Gender (optional)" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Join Date</label>
+                <Input name="join_date" placeholder="YYYY-MM-DD" required className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Is Deleted</label>
+                <Input name="is_deleted" placeholder="Is Deleted (true/false)" defaultValue="false" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Is Manager</label>
+                <Input name="is_manager" placeholder="Is Manager (true/false)" defaultValue="false" className="w-full" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Leave Balance</label>
+                <Input name="leave_balance" placeholder="Leave Balance (default 30)" defaultValue="30" className="w-full" />
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row justify-end gap-2 mt-6">
+              <Button variant="outline" type="button" onClick={() => setIsAddOpen(false)} className="w-full md:w-auto">Cancel</Button>
+              <Button type="submit" className="w-full md:w-auto">Add</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Import CSV Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Employees from CSV</DialogTitle>
+            <DialogDescription>Upload a CSV file with columns: Name, Email, Department, Position, Status, Join Date.</DialogDescription>
+          </DialogHeader>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="mb-2"
+            onChange={handleImportCSV}
+          />
+          {importError && <div className="text-red-500 text-sm mb-2">{importError}</div>}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => setIsImportOpen(false)}>Cancel</Button>
+            <Button type="button" onClick={() => fileInputRef.current?.click()}>Choose File</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
