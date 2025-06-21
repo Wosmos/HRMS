@@ -21,7 +21,7 @@ export function AuthLayout({ children, title, subtitle, backLink, alternativeAct
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Left side - Image and branding */}
-      <div className="relative flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-primary/60 p-6 text-primary-foreground md:w-1/2">
+      <div className=" relative hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-primary/60 p-6 text-primary-foreground md:w-1/2">
         <div className="absolute right-4 top-4 md:hidden">
           <ThemeToggle />
         </div>
@@ -49,7 +49,7 @@ export function AuthLayout({ children, title, subtitle, backLink, alternativeAct
             </Link>
           </div>
         )}
-        <div className="mb-8 flex items-center">
+        <div className="mb-8 flex items-center bg">
           <div className="mr-2 rounded-md bg-primary-foreground p-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
